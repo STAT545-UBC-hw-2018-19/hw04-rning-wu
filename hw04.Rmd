@@ -1,0 +1,93 @@
+---
+title: "Homework 4"
+output: github_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+suppressPackageStartupMessages(library(tidyverse))
+suppressPackageStartupMessages(library(gapminder))
+```
+
+## Data Reshaping
+
+First, we reshape the data: 
+```{r}
+gdpTable <- gapminder %>% 
+  mutate(gdp = gdpPercap*pop) %>% 
+  group_by(continent, year) %>%
+  summarize(totalGDP = sum(gdp)) %>% 
+  spread(key = continent, value = totalGDP)
+
+gdpTableDisp <- gdpTable %>% 
+  mutate(Africa = sprintf("%0.2e", Africa)) %>% 
+  mutate(Asia = sprintf("%0.2e", Asia)) %>% 
+  mutate(Americas = sprintf("%0.2e", Americas)) %>% 
+  mutate(Europe = sprintf("%0.2e", Europe)) %>% 
+  mutate(Oceania = sprintf("%0.2e", Oceania))
+
+knitr::kable(gdpTableDisp)
+```
+We can now take a look at the GDP of Asia (or any other continent, for that matter)
+```{r}
+gdpTable %>% 
+  ggplot(aes(x=year, y=Asia)) + 
+  geom_point() + 
+  scale_y_log10() + 
+  geom_smooth(method='lm', se = FALSE) + 
+  ylab('GDP') + 
+  ggtitle(paste0('GDP of Asia from 1950 - 2010')) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+```{r}
+gdpTable %>% 
+  ggplot(aes(x=year, y=Europe)) + 
+  geom_point() + 
+  scale_y_log10() + 
+  geom_smooth(method='lm', se = FALSE) + 
+  ylab('GDP') + 
+  ggtitle(paste0('GDP of Europe from 1950 - 2010')) +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+## Join 
+```{r}
+filtered <- gapminder %>% 
+  filter(year == 2007)
+```
+
+Create a new data frame corresponding to countries and their land area:
+```{r}
+newdf <- tribble(
+  ~country, ~area, 
+  'Afghanistan', 652860, 
+  'Austria', 82523, 
+  'Bangladesh', 130170,
+  'China', 9388211, 
+  'Germany', 348900,
+  'Spain', 500210,
+  'United Kingdom', 241930, 
+  'Croatia', 55960,
+  'Cambodia', 176520,
+  'Mexico', 1943950, 
+  'Serbia', 87460, 
+  'Canada', 9093510,
+  'Pakistan', 770880,
+  'Singapore', 709, 
+  'Australia', 7682300,
+  'Egypt', 995450,
+  'Brazil', 8358140
+)
+```
+
+Now, we can join the tables and compute the population density for certain countries
+```{r}
+df <- inner_join(filtered, newdf, by = 'country') # joins both created tables by country
+df = mutate(df, popDensity = pop/area)
+df = select(df, country, continent, popDensity)
+knitr::kable(df)
+```
